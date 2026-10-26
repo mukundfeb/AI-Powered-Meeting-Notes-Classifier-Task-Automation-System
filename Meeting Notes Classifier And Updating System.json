@@ -1,0 +1,278 @@
+{
+  "name": "Meeting Notes Classifier And Updating System",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following meeting notes and extract all actionable tasks.\n\nMeeting Notes:\n{{ $json[\"Meeting Notes\"] }}\n\nFor each task, identify:\n- Owner\n- Action Item\n- Due Date\n- Status\n\nRules:\n- Extract only actual assigned tasks.\n- If no owner is mentioned, use \"Unassigned\".\n- If no due date is mentioned, use null.\n- Set status to \"Pending\" by default.\n- Do not invent information.\n- Return valid JSON only.\n- Do not add explanations or markdown.\n\nReturn exactly in this format:\n\n{\n  \"tasks\": [\n    {\n      \"owner\": \"Name or Team\",\n      \"action_item\": \"Task description\",\n      \"due_date\": \"Deadline\",\n      \"status\": \"Pending\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "45f8843d-acac-4f0f-8eac-bbaf370d293b",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        96,
+        208
+      ],
+      "id": "f2f741e4-36b2-43bc-8a58-96800f1a1be3",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "k0i9KG5xl9nxPPWq",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get AI Agent output\nlet raw = $json.output;\n\n// Remove markdown code blocks if the AI ever adds them\nraw = raw\n  .replace(/```json/gi, \"\")\n  .replace(/```/g, \"\")\n  .trim();\n\n// Convert the JSON string into a real JavaScript object\nconst data = JSON.parse(raw);\n\n// Get all extracted tasks\nconst tasks = data.tasks || [];\n\n// Convert every task into a clean individual n8n item\nreturn tasks.map((task, index) => ({\n  json: {\n    task_id: `TASK-${String(index + 1).padStart(3, \"0\")}`,\n    owner: task.owner || \"Unassigned\",\n    action_item: task.action_item || \"No task provided\",\n    due_date: task.due_date || \"Not Specified\",\n    status: task.status || \"Pending\"\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "63e222a4-096a-40a4-a9b7-a86313b63019",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "formTitle": "Automated Meeting-to-Action Workflow System",
+        "formDescription": "Please Enter Your Meeting Notes Below",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Meeting Notes",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "be087463-cb40-4dc1-986e-486a15e8931f",
+      "name": "On form submission",
+      "webhookId": "b3ba76a6-79f8-4ea4-bda5-8d48293a3fe6"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1CGhnXem_wpHUAoyrVrSGdHAngM19vdAc_-BSLlx4XZA",
+          "mode": "list",
+          "cachedResultName": "Meeting Task Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1CGhnXem_wpHUAoyrVrSGdHAngM19vdAc_-BSLlx4XZA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1CGhnXem_wpHUAoyrVrSGdHAngM19vdAc_-BSLlx4XZA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "task_id": "={{ $json.task_id }}",
+            "owner": "={{ $json.owner }}",
+            "action_item": "={{ $json.action_item }}",
+            "due_date": "={{ $json.due_date }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_item",
+              "displayName": "action_item",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "due_date",
+              "displayName": "due_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1024,
+        224
+      ],
+      "id": "05a7644d-f67c-4a90-baa9-7526323c3524",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Wwg8GQBcPgskcsU3",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tasks = $input.all().map(item => item.json);\n\nlet html = `\n<h2 style=\"font-family:Arial;\">Meeting Action Summary</h2>\n<p style=\"font-family:Arial;\">The following tasks were extracted from the meeting:</p>\n\n<table style=\"border-collapse:collapse;width:100%;font-family:Arial;\">\n  <tr style=\"background:#f2f2f2;\">\n    <th style=\"border:1px solid #ddd;padding:10px;\">Task ID</th>\n    <th style=\"border:1px solid #ddd;padding:10px;\">Owner</th>\n    <th style=\"border:1px solid #ddd;padding:10px;\">Action Item</th>\n    <th style=\"border:1px solid #ddd;padding:10px;\">Due Date</th>\n    <th style=\"border:1px solid #ddd;padding:10px;\">Status</th>\n  </tr>\n`;\n\ntasks.forEach(task => {\n  html += `\n  <tr>\n    <td style=\"border:1px solid #ddd;padding:10px;\">\n      ${task.task_id}\n    </td>\n\n    <td style=\"border:1px solid #ddd;padding:10px;\">\n      ${task.owner}\n    </td>\n\n    <td style=\"border:1px solid #ddd;padding:10px;\">\n      ${task.action_item}\n    </td>\n\n    <td style=\"border:1px solid #ddd;padding:10px;\">\n      ${task.due_date}\n    </td>\n\n    <td style=\"border:1px solid #ddd;padding:10px;\">\n      ${task.status}\n    </td>\n  </tr>\n  `;\n});\n\nhtml += `\n</table>\n\n<p style=\"font-family:Arial;margin-top:20px;\">\nPlease review the assigned tasks and complete them before the respective deadlines.\n</p>\n\n<p style=\"font-family:Arial;\">\nRegards,<br>\nAutomated Meeting-to-Action Workflow System\n</p>\n`;\n\nreturn [\n  {\n    json: {\n      subject: \"Meeting Action Summary\",\n      html: html\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -16
+      ],
+      "id": "c932a829-7363-49c2-b5f4-bb0189a86030",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "sendTo": "msganig@gmail.com",
+        "subject": "Meeting Action Summary",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        -16
+      ],
+      "id": "85c919d3-4402-4c69-b717-344ab9c8882a",
+      "name": "Send a message",
+      "webhookId": "8e292e12-8d09-4999-8505-5b7ddfea2689",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7fk7Ch3jAO1P6M9m",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a89a0a8b-eeb7-4694-8027-deb30734b85c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7781170a9747af5c39f891005bdb52ad1141f302c34f4e8590f192bd24d63319"
+  },
+  "nodeGroups": [],
+  "id": "CMEcdUxDQsADbO0h",
+  "tags": []
+}
