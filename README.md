@@ -1,4 +1,4 @@
-# AI-Powered Meeting Notes Classifier & Task Automation System
+# AI-Powered Meeting Notes Classifier & Task Automation System Using N8N
 
 ### Intelligent Meeting-to-Action Workflow Using n8n, Groq AI, Google Sheets & Gmail
 
